@@ -1,6 +1,10 @@
 import random
 import copy
+import csv
+import xlsxwriter
+
 from sample_glossary import sample_glossary
+
 
 class Quiz_Word:
     """
@@ -149,25 +153,43 @@ class Quiz:
         """ translate the question list into a multiple choice quiz """
 
         for key, value in self.dict_of_questions.items():
-            if value.entry_to_translation == True:
-                self.mc_quiz.append(f"What does '{value.quiz_question[0].entry}' mean in English?")
-                for v in value.quiz_question:
-                    self.mc_quiz.append(v.translation)
-            else:
-                self.mc_quiz.append(f"How is '{value.quiz_question[0].translation}' best translated?")
-                for v in value.quiz_question:
-                    self.mc_quiz.append(v.entry)
 
-def print_quiz(glossary):
+            question = []
+
+            if value.entry_to_translation == True:
+                question.append(f"What does '{value.quiz_question[0].entry}' mean in English?")
+                for v in value.quiz_question:
+                    question.append(v.translation)
+            else:
+                question.append(f"How is '{value.quiz_question[0].translation}' best translated?")
+                for v in value.quiz_question:
+                    question.append(v.entry)
+
+            self.mc_quiz.append(question)
+
+def create_kahoot(glossary):
     quiz = Quiz(glossary)
     quiz.create_list_of_words()
     quiz.create_dict_of_questions()
     quiz.create_mc_quiz()
-    print(quiz.mc_quiz)
 
+    with open('kahoot_template.csv', newline='') as f:
+        reader = csv.reader(f)
+        data = list(reader)
+        for i, q in enumerate(quiz.mc_quiz):
+            q.append(10)
+            q.append(1)
+            data.append(q)
+            q.insert(0,i)
+
+    with xlsxwriter.Workbook('kahoot_quiz.xlsx') as workbook:
+        worksheet = workbook.add_worksheet()
+
+        for row_num, row_data in enumerate(data):
+            worksheet.write_row(row_num, 0, row_data)
 
 if __name__ == '__main__':
 
     from sample_glossary import sample_glossary
 
-    print_quiz(sample_glossary)
+    make_kahoot_quiz(sample_glossary)
