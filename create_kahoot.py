@@ -65,7 +65,7 @@ class Quiz_Question:
 
 #        random.shuffle(word_list)
 
-        copy_of_list = copy.deepcopy(word_list)
+        copy_of_list = copy.deepcopy(self.word_list)
 
         counter = 5
 
@@ -76,60 +76,98 @@ class Quiz_Question:
             self.quiz_question.append(copy_of_list.pop())
             counter -= 1
 
-def create_list_of_words(glossary):
-    """ convert all words in glossary into list of objects """
+class Quiz:
+    """
+    When given a list of tuples, comprising an entry and a translation,
+    this class can produce an excel file compatible with kahoot,
+    so that a multiple choice quiz can be uploaded to the website.
 
-    word_list = []
+    By default, the first selection will be the correct answer and the time
+    limit will be 10 seconds.
 
-    for g in glossary:
-        word_list.append(Quiz_Word(g))
+    Attributes:
+    -----------
 
-    return word_list
+    glossary : list:
+        This list comprises a list of tuples: an entry and a translation
 
-def create_list_of_questions(word_list):
-    """ make questions, ensure they're unique """
+    word_list : list
+        This list comprises Quiz_Word objects.
 
-    remaining_questions = 10
-    
-    if len(word_list) < 10:
-        remaining_questions = len(word_list)
+    dict_of_questions : dict
+        This dict has Quiz_Question objects as values and the word in question as key
 
-    question_list = {}
+    mc_quiz : list
+        This list comprises strings that can be pasted into the kahoot quiz template
 
-    while remaining_questions > 0:
-        random.shuffle(word_list)
-        # Make sure this word hasn't already been asked about
-        if word_list[-1].entry not in question_list.keys():
-            keyname = word_list[-1].entry
-            question = Quiz_Question(word_list)
-            question.populate_quiz_question()
-            question_list[keyname] = question
-            remaining_questions -= 1
+    Methods:
+    --------
 
-    return question_list
+    create_list_of_words
+        converts all words in glossary into list of Quiz_Word objects
 
-def create_mc_quiz(question_list):
-    """ translate the question list into a multiple choice quiz """
-    mc_quiz = []
-    for key, value in list_of_questions.items():
-        if value.entry_to_translation == True:
-            mc_quiz.append(f"What does '{value.quiz_question[0].entry}' mean in English?")
-            for v in value.quiz_question:
-                mc_quiz.append(v.translation)
-        else:
-            mc_quiz.append(f"How is '{value.quiz_question[0].translation}' best translated?")
-            for v in value.quiz_question:
-                mc_quiz.append(v.entry)
-            
-    return mc_quiz
-            
+    create_list_of_questions
+        processes a list of Quiz_Words into a list of Quiz_Question objects
+
+    create_mc_quiz
+        processes a list of Quiz_Question objects into a list of strings
+        that can then be used in the kahoot quiz template
+
+    """
+
+    def __init__(self,glossary):
+        self.glossary = glossary
+        self.word_list = []
+        self.dict_of_questions = {}
+        self.mc_quiz = []
+
+    def create_list_of_words(self):
+        """ convert all words in glossary into list of objects """
+
+        for g in self.glossary:
+            self.word_list.append(Quiz_Word(g))
+
+    def create_dict_of_questions(self):
+        """ make questions, ensure they're unique """
+
+        remaining_questions = 10
+        
+        if len(self.word_list) < 10:
+            remaining_questions = len(self.word_list)
+
+        while remaining_questions > 0:
+            random.shuffle(self.word_list)
+            # Make sure this word hasn't already been asked about
+            if self.word_list[-1].entry not in self.dict_of_questions.keys():
+                keyname = self.word_list[-1].entry
+                question = Quiz_Question(self.word_list)
+                question.populate_quiz_question()
+                self.dict_of_questions[keyname] = question
+                remaining_questions -= 1
+
+    def create_mc_quiz(self):
+        """ translate the question list into a multiple choice quiz """
+
+        for key, value in self.dict_of_questions.items():
+            if value.entry_to_translation == True:
+                self.mc_quiz.append(f"What does '{value.quiz_question[0].entry}' mean in English?")
+                for v in value.quiz_question:
+                    self.mc_quiz.append(v.translation)
+            else:
+                self.mc_quiz.append(f"How is '{value.quiz_question[0].translation}' best translated?")
+                for v in value.quiz_question:
+                    self.mc_quiz.append(v.entry)
+
+def print_quiz(glossary):
+    quiz = Quiz(glossary)
+    quiz.create_list_of_words()
+    quiz.create_dict_of_questions()
+    quiz.create_mc_quiz()
+    print(quiz.mc_quiz)
+
 
 if __name__ == '__main__':
 
     from sample_glossary import sample_glossary
 
-    word_list = create_list_of_words(sample_glossary)
-
-    list_of_questions = create_list_of_questions(word_list)
-    mc_quiz = create_mc_quiz(list_of_questions)
-    [print(q) for q in mc_quiz]
+    print_quiz(sample_glossary)
